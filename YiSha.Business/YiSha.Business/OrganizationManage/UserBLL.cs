@@ -72,7 +72,7 @@ namespace YiSha.Business.OrganizationManage
             {
                 return new() { Tag = 0, Message = "账号不存在，请重新输入" };
             }
-            if (user.UserStatus != (int)StatusEnum.Yes)
+            if (user.UserStatus != StatusEnum.Yes)
             {
                 return new() { Tag = 0, Message = "账号被禁用，请联系管理员" };
             }

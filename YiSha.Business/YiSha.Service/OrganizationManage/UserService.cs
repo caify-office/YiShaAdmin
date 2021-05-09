@@ -182,7 +182,7 @@ namespace YiSha.Service.OrganizationManage
                 }
                 if (param.UserStatus > -1)
                 {
-                    expression = expression.And(t => t.UserStatus == param.UserStatus);
+                    expression = expression.And(t => t.UserStatus.ParseToInt() == param.UserStatus);
                 }
                 if (param.StartTime.HasValue)
                 {

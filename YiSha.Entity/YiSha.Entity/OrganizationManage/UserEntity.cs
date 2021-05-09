@@ -2,6 +2,7 @@
 using System;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations.Schema;
+using YiSha.Enum;
 using YiSha.Util.Helper;
 
 namespace YiSha.Entity.OrganizationManage
@@ -38,9 +39,9 @@ namespace YiSha.Entity.OrganizationManage
 
         public int? LoginCount { get; set; }
 
-        public int? UserStatus { get; set; }
+        public StatusEnum? UserStatus { get; set; }
 
-        public int? IsSystem { get; set; }
+        public IsEnum? IsSystem { get; set; }
 
         public int? IsOnline { get; set; }
 
