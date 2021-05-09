@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using YiSha.Cache.Factory;
+using YiSha.Cache;
 using YiSha.Entity.OrganizationManage;
 using YiSha.Enum;
 using YiSha.Enum.OrganizationManage;

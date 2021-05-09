@@ -60,7 +60,7 @@ namespace YiSha.DataTest
             var pageSize = 10;
             var pageIndex = 1;
             var repositoryFactory = new RepositoryFactory();
-            var tempData = repositoryFactory.BaseRepository().Set<RoleEntity>().AsQueryable();
+            var tempData = RepositoryFactory.BaseRepository().Set<RoleEntity>().AsQueryable();
             tempData = tempData.AppendSort(sort, isAsc);
             tempData = tempData.Skip(pageSize * (pageIndex - 1)).Take(pageSize).AsQueryable();
             var sql = tempData.GetSql();
@@ -89,7 +89,7 @@ namespace YiSha.DataTest
         {
             var repositoryFactory = new RepositoryFactory();
             var sql = @"select UserName from SysUser where Id = @Id";
-            var result = await repositoryFactory.BaseRepository().FindEntity<string>(sql, DbParameterHelper.CreateDbParameter("@Id", 16508640061130151));
+            var result = await RepositoryFactory.BaseRepository().FindEntity<string>(sql, DbParameterHelper.CreateDbParameter("@Id", 16508640061130151));
             Assert.IsTrue(result == "admin");
         }
 
@@ -98,7 +98,7 @@ namespace YiSha.DataTest
         {
             var repositoryFactory = new RepositoryFactory();
             var sql = @"select UserName from SysUser where Id = @Id";
-            var result = await repositoryFactory.BaseRepository().FindEntity<string>(sql, DbParameterHelper.CreateDbParameter("@Id", 345));
+            var result = await RepositoryFactory.BaseRepository().FindEntity<string>(sql, DbParameterHelper.CreateDbParameter("@Id", 345));
             Assert.IsTrue(result == default);
         }
 
@@ -107,7 +107,7 @@ namespace YiSha.DataTest
         {
             var repositoryFactory = new RepositoryFactory();
             var sql = @"select UserName from SysUser where Id = @Id";
-            var result = await repositoryFactory.BaseRepository().FindEntity<dynamic>(sql, DbParameterHelper.CreateDbParameter("@Id", 16508640061130151));
+            var result = await RepositoryFactory.BaseRepository().FindEntity<dynamic>(sql, DbParameterHelper.CreateDbParameter("@Id", 16508640061130151));
             Assert.IsTrue(result.UserName == "admin");
         }
     }

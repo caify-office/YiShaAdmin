@@ -1,9 +1,6 @@
-﻿using YiSha.Cache.Interface;
-using YiSha.MemoryCache;
-using YiSha.RedisCache;
-using YiSha.Util.Model;
+﻿using YiSha.Util.Model;
 
-namespace YiSha.Cache.Factory
+namespace YiSha.Cache
 {
     public static class CacheFactory
     {

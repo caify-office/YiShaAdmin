@@ -2,7 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Threading.Tasks;
-using YiSha.Cache.Factory;
+using YiSha.Cache;
 using YiSha.Util.Model;
 using YiSha.Web.Code.State;
 
@@ -98,7 +98,7 @@ namespace YiSha.Web.Code
             }
             if (string.IsNullOrEmpty(token))
             {
-                return user;
+                return null;
             }
             token = token.Trim('"');
             user = CacheFactory.Cache.GetCache<OperatorInfo>(token);

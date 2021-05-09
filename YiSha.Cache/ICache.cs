@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace YiSha.Cache.Interface
+namespace YiSha.Cache
 {
     public interface ICache
     {

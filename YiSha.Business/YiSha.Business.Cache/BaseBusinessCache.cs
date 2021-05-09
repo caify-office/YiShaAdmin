@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using YiSha.Cache.Factory;
+using YiSha.Cache;
 
 namespace YiSha.Business.Cache
 {

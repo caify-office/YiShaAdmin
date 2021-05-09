@@ -2,11 +2,10 @@
 using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
-using YiSha.Cache.Interface;
 using YiSha.Util.Helper;
 using YiSha.Util.Model;
 
-namespace YiSha.RedisCache
+namespace YiSha.Cache
 {
     public class RedisCacheImp : ICache
     {

@@ -2,9 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-
     <IsPackable>false</IsPackable>
-
     <LangVersion>9</LangVersion>
   </PropertyGroup>
 
@@ -18,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\YiSha.Cache\YiSha.Cache.Factory\YiSha.Cache.Factory.csproj" />
+    <ProjectReference Include="..\..\YiSha.Cache\YiSha.Cache.csproj" />
     <ProjectReference Include="..\..\YiSha.Util\YiSha.Util\YiSha.Util.csproj" />
     <ProjectReference Include="..\..\YiSha.Business\YiSha.Business.AutoJob\YiSha.Business.AutoJob.csproj" />
     <ProjectReference Include="..\..\YiSha.Business\YiSha.Business\YiSha.Business.csproj" />

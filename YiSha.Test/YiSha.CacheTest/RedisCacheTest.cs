@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using YiSha.Business.SystemManage;
-using YiSha.Cache.Factory;
+using YiSha.Cache;
 using YiSha.Entity.SystemManage;
 using YiSha.Util.Model;
 

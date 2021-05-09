@@ -3,11 +3,10 @@ using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using YiSha.Cache.Interface;
 using YiSha.Util.Helper;
 using YiSha.Util.Model;
 
-namespace YiSha.MemoryCache
+namespace YiSha.Cache
 {
     public class MemoryCacheImp : ICache
     {
