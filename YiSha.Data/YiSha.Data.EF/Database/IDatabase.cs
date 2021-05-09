@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
+﻿using Microsoft.EntityFrameworkCore.Storage;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -8,7 +7,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 
-namespace YiSha.Data
+namespace YiSha.Data.EF.Database
 {
     public interface IDatabase
     {
@@ -17,7 +16,7 @@ namespace YiSha.Data
         /// <summary>
         /// 获取 当前使用的数据访问上下文对象
         /// </summary>
-        public DbContext DbContext { get; set; }
+        public Microsoft.EntityFrameworkCore.DbContext DbContext { get; set; }
 
         /// <summary>
         /// 事务对象
@@ -82,13 +81,9 @@ namespace YiSha.Data
 
         #region Find
 
-        IQueryable<T> AsQueryable<T>(Expression<Func<T, bool>> condition) where T : class, new();
-
         Task<T> FindEntity<T>(object keyValue) where T : class;
 
         Task<T> FindEntity<T>(Expression<Func<T, bool>> condition) where T : class, new();
-
-        Task<T> FindEntity<T>(string sort, bool isAsc) where T : class, new();
 
         Task<T> FindEntity<T>(string sql, params DbParameter[] dbParameter);
 

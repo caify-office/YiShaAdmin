@@ -6,7 +6,7 @@ using System.Data.Common;
 using System.Linq;
 using YiSha.Util.Extension;
 
-namespace YiSha.Data.Extension
+namespace YiSha.Data.Helper
 {
     public static class DbParameterHelper
     {

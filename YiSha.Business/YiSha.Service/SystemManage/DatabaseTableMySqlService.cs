@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using YiSha.Data.EF.Database;
 using YiSha.Data.Extension;
+using YiSha.Data.Helper;
 using YiSha.Data.Repository;
 using YiSha.Entity.OrganizationManage;
 using YiSha.Entity.SystemManage;

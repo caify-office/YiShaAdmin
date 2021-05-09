@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Data.Common;
+using System.Linq;
 using YiSha.Util.Helper;
 
-namespace YiSha.Data.Extension
+namespace YiSha.Data.Helper
 {
-    public static class DbPagingHelper
+    public static class DbSqlHelper
     {
         /// <summary>
         /// 根据配置文件中所配置的数据库类型
@@ -20,7 +22,7 @@ namespace YiSha.Data.Extension
             };
         }
 
-        public static string SqlPagingSql(string sql, string sort, bool isAsc, int pageSize, int pageIndex)
+        private static string SqlPagingSql(string sql, string sort, bool isAsc, int pageSize, int pageIndex)
         {
             CheckSqlParam(sort);
 
@@ -31,7 +33,7 @@ namespace YiSha.Data.Extension
             int start = (pageIndex - 1) * pageSize;
             int end = pageIndex * pageSize;
 
-            string orderBy;
+            string orderBy = "ORDER BY (SELECT 0)";
             if (sort?.Length > 0)
             {
                 orderBy = $" ORDER BY {sort} ";
@@ -40,14 +42,10 @@ namespace YiSha.Data.Extension
                     orderBy += isAsc ? "ASC" : "DESC";
                 }
             }
-            else
-            {
-                orderBy = "ORDER BY (SELECT 0)";
-            }
             return $"SELECT * FROM (SELECT ROW_NUMBER() Over ({orderBy}) AS ROWNUM, * From ({sql}) t ) AS N WHERE ROWNUM > {start} AND ROWNUM <= {end}";
         }
 
-        public static string OraclePagingSql(string sql, string sort, bool isAsc, int pageSize, int pageIndex)
+        private static string OraclePagingSql(string sql, string sort, bool isAsc, int pageSize, int pageIndex)
         {
             CheckSqlParam(sort);
 
@@ -70,7 +68,7 @@ namespace YiSha.Data.Extension
             return $"SELECT * From (SELECT ROWNUM AS n, T.* From ({sql + orderBy}) t )  N WHERE n > {start} AND n <= {end}";
         }
 
-        public static string MySqlPagingSql(string sql, string sort, bool isAsc, int pageSize, int pageIndex)
+        private static string MySqlPagingSql(string sql, string sort, bool isAsc, int pageSize, int pageIndex)
         {
             CheckSqlParam(sort);
 
@@ -95,6 +93,42 @@ namespace YiSha.Data.Extension
         public static string GetCountSql(string sql)
         {
             return $"SELECT COUNT(1) FROM ({sql}) t";
+        }
+
+        /// <summary>
+        /// 拼接删除SQL语句
+        /// </summary>
+        public static string GetDeleteSql(string tableName)
+        {
+            return $"DELETE FROM {tableName}";
+        }
+
+        /// <summary>
+        /// 拼接删除SQL语句
+        /// </summary>
+        public static (string sql, DbParameter parameter) GetDeleteSql(string tableName, string propertyName, object propertyValue)
+        {
+            var parameter = DbParameterHelper.CreateDbParameter($"@{propertyName}", propertyValue);
+            var sql = $"DELETE FROM {tableName} WHERE {propertyName} = {parameter.ParameterName}";
+            return (sql, parameter);
+        }
+
+        /// <summary>
+        /// 拼接批量删除SQL语句
+        /// </summary>
+        public static (string sql, DbParameter[] parameters) GetDeleteSql(string tableName, string propertyName, object[] propertyValue)
+        {
+            var parameters = DbParameterHelper.CreateDbParameters($"@{propertyName}", propertyValue);
+            var sql = $"DELETE FROM {tableName} WHERE {propertyName} IN ({string.Join(',', parameters.Select(x => x.ParameterName))})";
+            return (sql, parameters);
+        }
+
+        /// <summary>
+        /// 存储过程语句
+        /// </summary>
+        public static string BuilderProc(string procName, params DbParameter[] dbParameter)
+        {
+            return $"EXEC {procName} {string.Join(',', dbParameter.Select(x => $"{x.ParameterName}"))}";
         }
 
         private static void CheckSqlParam(string param)

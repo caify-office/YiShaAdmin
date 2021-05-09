@@ -21,7 +21,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YiSha.IdGenerator", "YiSha.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YiSha.CodeGenerator", "YiSha.Util\YiSha.CodeGenerator\YiSha.CodeGenerator.csproj", "{C7494797-F47B-422B-8275-1D4ACB459040}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YiSha.Data", "YiSha.Data\YiSha.Data\YiSha.Data.csproj", "{A0EB5A6C-5D7F-4CE8-AD6C-A8378BB91F49}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YiSha.Data.Util", "YiSha.Data\YiSha.Data.Util\YiSha.Data.Util.csproj", "{A0EB5A6C-5D7F-4CE8-AD6C-A8378BB91F49}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "YiSha.Data.EF", "YiSha.Data\YiSha.Data.EF\YiSha.Data.EF.csproj", "{A49539D9-9041-4779-BCE8-42FFDB98CB8A}"
 EndProject

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using YiSha.Data.Extension;
+using YiSha.Data.Helper;
 using YiSha.Data.Repository;
 using YiSha.Entity.SystemManage;
 using YiSha.Model.Param.SystemManage;
@@ -59,7 +60,7 @@ namespace YiSha.DataTest
             var pageSize = 10;
             var pageIndex = 1;
             var repositoryFactory = new RepositoryFactory();
-            var tempData = repositoryFactory.BaseRepository().Db.DbContext.Set<RoleEntity>().AsQueryable();
+            var tempData = repositoryFactory.BaseRepository().Set<RoleEntity>().AsQueryable();
             tempData = tempData.AppendSort(sort, isAsc);
             tempData = tempData.Skip(pageSize * (pageIndex - 1)).Take(pageSize).AsQueryable();
             var sql = tempData.GetSql();

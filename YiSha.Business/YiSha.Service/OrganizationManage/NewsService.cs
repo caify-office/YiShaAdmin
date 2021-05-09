@@ -3,6 +3,7 @@ using System.Data.Common;
 using System.Text;
 using System.Threading.Tasks;
 using YiSha.Data.Extension;
+using YiSha.Data.Helper;
 using YiSha.Data.Repository;
 using YiSha.Entity.OrganizationManage;
 using YiSha.Model.Param.OrganizationManage;

@@ -18,7 +18,7 @@
     <ProjectReference Include="..\..\YiSha.Business\YiSha.Service\YiSha.Service.csproj" />
     <ProjectReference Include="..\..\YiSha.Data\YiSha.Data.EF\YiSha.Data.EF.csproj" />
     <ProjectReference Include="..\..\YiSha.Data\YiSha.Data.Repository\YiSha.Data.Repository.csproj" />
-    <ProjectReference Include="..\..\YiSha.Data\YiSha.Data\YiSha.Data.csproj" />
+    <ProjectReference Include="..\..\YiSha.Data\YiSha.Data.Util\YiSha.Data.Util.csproj" />
     <ProjectReference Include="..\..\YiSha.Entity\YiSha.Model\YiSha.Model.csproj" />
   </ItemGroup>
 

@@ -48,12 +48,12 @@ namespace YiSha.Service.SystemManage
             {
                 expression = expression.And(t => t.Id != entity.Id);
             }
-            return BaseRepository().AsQueryable(expression).Any();
+            return BaseRepository().Set<DataDictEntity>().Any(expression);
         }
 
         public bool ExistDictDetail(string dictType)
         {
-            return BaseRepository().AsQueryable<DataDictDetailEntity>(t => t.DictType == dictType).Any();
+            return BaseRepository().Set<DataDictDetailEntity>().Any(t => t.DictType == dictType);
         }
 
         #endregion

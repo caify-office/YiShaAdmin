@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using YiSha.Data.Extension;
+using YiSha.Data.Helper;
 using YiSha.Data.Repository;
 using YiSha.Model.Result.SystemManage;
 using YiSha.Util.Extension;

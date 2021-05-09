@@ -45,7 +45,7 @@ namespace YiSha.Service.OrganizationManage
             {
                 expression = expression.And(t => t.Id != entity.Id);
             }
-            return BaseRepository().AsQueryable(expression).Any();
+            return BaseRepository().Set<DepartmentEntity>().Any(expression);
         }
 
         /// <summary>
@@ -53,7 +53,7 @@ namespace YiSha.Service.OrganizationManage
         /// </summary>
         public bool ExistChildrenDepartment(long id)
         {
-            return BaseRepository().AsQueryable<DepartmentEntity>(t => t.ParentId == id).Any();
+            return BaseRepository().Set<DepartmentEntity>().Any(t => t.ParentId == id);
         }
 
         /// <summary>
@@ -61,7 +61,7 @@ namespace YiSha.Service.OrganizationManage
         /// </summary>
         public bool ExistChildrenDepartment(IEnumerable<long> ids)
         {
-            return BaseRepository().AsQueryable<DepartmentEntity>(t => ids.Contains(t.ParentId ?? 0)).Any();
+            return BaseRepository().Set<DepartmentEntity>().Any(t => ids.Contains(t.ParentId ?? 0));
         }
 
         #endregion

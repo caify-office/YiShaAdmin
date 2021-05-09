@@ -1,7 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Reflection;
@@ -12,6 +13,7 @@ namespace YiSha.Data.EF.DbContext
 {
     public class MySqlDbContext : Microsoft.EntityFrameworkCore.DbContext
     {
+        private static readonly ConcurrentDictionary<string, string[]> _keyCache = new();
         private static readonly ILoggerFactory _loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
 
         private string ConnectionString { get; }
@@ -27,34 +29,45 @@ namespace YiSha.Data.EF.DbContext
 
         #region 重载
 
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        protected override void OnConfiguring(DbContextOptionsBuilder builder)
         {
-            optionsBuilder.UseMySql(ConnectionString, ServerVersion, p => p.CommandTimeout(GlobalContext.SystemConfig.DbCommandTimeout));
-            optionsBuilder.AddInterceptors(new DbCommandCustomInterceptor());
-            optionsBuilder.UseLoggerFactory(_loggerFactory);
+            if (!builder.IsConfigured)
+            {
+                builder.UseLoggerFactory(_loggerFactory)
+                       .AddInterceptors(new DbCommandCustomInterceptor())
+                       .UseMySql(ConnectionString, ServerVersion, o => o.CommandTimeout(GlobalContext.SystemConfig.DbCommandTimeout));
+            }
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            Assembly entityAssembly = Assembly.Load(new AssemblyName("YiSha.Entity"));
-            IEnumerable<Type> typesToRegister = entityAssembly.GetTypes().Where(p => !string.IsNullOrEmpty(p.Namespace))
-                                                              .Where(p => !string.IsNullOrEmpty(p.GetCustomAttribute<TableAttribute>()?.Name));
-            foreach (Type type in typesToRegister)
+            var entityAssembly = Assembly.Load(new AssemblyName("YiSha.Entity"));
+            var types = entityAssembly.GetTypes()
+                                                .Where(p => p.Namespace?.Length > 0)
+                                                .Where(p => p.GetCustomAttribute<TableAttribute>()?.Name.Length > 0);
+
+            foreach (var type in types)
             {
-                dynamic configurationInstance = Activator.CreateInstance(type);
-                modelBuilder.Model.AddEntityType(type);
+                if (modelBuilder.Model.FindEntityType(type) == null)
+                {
+                    modelBuilder.Model.AddEntityType(type);
+                }
+
+                if (!_keyCache.ContainsKey(type.FullName))
+                {
+                    var props = ReflectionHelper.GetProperties(type)
+                                                .Where(p => p.GetCustomAttribute<KeyAttribute>() is not null)
+                                                .Select(x => x.Name).ToArray();
+                    _keyCache.TryAdd(type.FullName, props.Any() ? props : new[] { "Id" });
+                }
             }
+
             foreach (var entity in modelBuilder.Model.GetEntityTypes())
             {
-                PrimaryKeyConvention.SetPrimaryKey(modelBuilder, entity.Name);
-                string currentTableName = modelBuilder.Entity(entity.Name).Metadata.GetTableName();
-                modelBuilder.Entity(entity.Name).ToTable(currentTableName);
-
-                //var properties = entity.GetProperties();
-                //foreach (var property in properties)
-                //{
-                //    ColumnConvention.SetColumnName(modelBuilder, entity.Name, property.Name);
-                //}
+                var model = modelBuilder.Entity(entity.Name);
+                var currentTableName = model.Metadata.GetTableName();
+                model.HasKey(_keyCache[entity.Name]);
+                model.ToTable(currentTableName);
             }
 
             base.OnModelCreating(modelBuilder);

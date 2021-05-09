@@ -18,7 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\YiSha.Util\YiSha.Util\YiSha.Util.csproj" />
-    <ProjectReference Include="..\YiSha.Data\YiSha.Data.csproj" />
+    <ProjectReference Include="..\YiSha.Data.Util\YiSha.Data.Util.csproj" />
   </ItemGroup>
   
 </Project>

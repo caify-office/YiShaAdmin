@@ -8,6 +8,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using YiSha.Data.Extension;
+using YiSha.Data.Helper;
 using YiSha.Util.Extension;
 using YiSha.Util.Helper;
 
@@ -52,7 +53,7 @@ namespace YiSha.Data.EF.Database
         {
             try
             {
-                DbContextExtension.SetEntityDefaultValue(DbContext);
+                DbContext.SetDefaultValue();
                 int result = await DbContext.SaveChangesAsync();
                 if (DbContextTransaction != null)
                 {
@@ -95,7 +96,7 @@ namespace YiSha.Data.EF.Database
 
         public virtual async Task<int> ExecuteByProc(string procName, params DbParameter[] dbParameter)
         {
-            await DbContext.Database.ExecuteSqlRawAsync(DbContextExtension.BuilderProc(procName, dbParameter), dbParameter);
+            await DbContext.Database.ExecuteSqlRawAsync(DbSqlHelper.BuilderProc(procName, dbParameter), dbParameter);
             return DbContextTransaction == null ? await CommitTrans() : 0;
         }
 
@@ -121,11 +122,11 @@ namespace YiSha.Data.EF.Database
 
         public virtual async Task<int> Delete<T>() where T : class
         {
-            var entityType = DbContextExtension.GetEntityType<T>(DbContext);
+            var entityType = DbContext.GetEntityType<T>();
             if (entityType != null)
             {
                 var tableName = entityType.GetTableName();
-                return await ExecuteBySql(DbContextExtension.DeleteSql(tableName));
+                return await ExecuteBySql(DbSqlHelper.GetDeleteSql(tableName));
             }
             return -1;
         }
@@ -160,11 +161,11 @@ namespace YiSha.Data.EF.Database
 
         private async Task<int> ExecuteDelete<T>(string propertyName, params object[] propertyValue) where T : class
         {
-            var entityType = DbContextExtension.GetEntityType<T>(DbContext);
+            var entityType = DbContext.GetEntityType<T>();
             if (entityType != null)
             {
                 var tableName = entityType.GetTableName();
-                var (sql, parameter) = DbContextExtension.DeleteSql(tableName, propertyName, propertyValue);
+                var (sql, parameter) = DbSqlHelper.GetDeleteSql(tableName, propertyName, propertyValue);
                 return await ExecuteBySql(sql, parameter);
             }
             return -1;
@@ -214,11 +215,6 @@ namespace YiSha.Data.EF.Database
 
         #region Find
 
-        public virtual IQueryable<T> AsQueryable<T>(Expression<Func<T, bool>> condition) where T : class, new()
-        {
-            return DbContext.Set<T>().Where(condition);
-        }
-
         public virtual async Task<T> FindEntity<T>(object keyValue) where T : class
         {
             return await DbContext.Set<T>().FindAsync(keyValue);
@@ -227,11 +223,6 @@ namespace YiSha.Data.EF.Database
         public virtual async Task<T> FindEntity<T>(Expression<Func<T, bool>> condition) where T : class, new()
         {
             return await DbContext.Set<T>().Where(condition).FirstOrDefaultAsync();
-        }
-
-        public virtual async Task<T> FindEntity<T>(string sort, bool isAsc) where T : class, new()
-        {
-            return await DbContext.Set<T>().AsQueryable().AppendSort(sort, isAsc).FirstOrDefaultAsync();
         }
 
         public virtual async Task<T> FindEntity<T>(string sql, params DbParameter[] dbParameter)
@@ -276,10 +267,10 @@ namespace YiSha.Data.EF.Database
         {
             await using var dbConnection = DbContext.Database.GetDbConnection();
             var dbHelper = new DbHelper(DbContext, dbConnection);
-            int total = (await dbHelper.ExecuteScalarAsync(CommandType.Text, DbPagingHelper.GetCountSql(sql), dbParameter)).ParseToInt();
+            int total = (await dbHelper.ExecuteScalarAsync(CommandType.Text, DbSqlHelper.GetCountSql(sql), dbParameter)).ParseToInt();
             if (total > 0)
             {
-                var pagingSql = DbPagingHelper.GetPagingSql(sql, sort, isAsc, pageSize, pageIndex);
+                var pagingSql = DbSqlHelper.GetPagingSql(sql, sort, isAsc, pageSize, pageIndex);
                 using var reader = await dbHelper.ExecuteReadeAsync(CommandType.Text, pagingSql, dbParameter);
                 return (total, reader.ToList<T>(sql));
             }
@@ -297,10 +288,10 @@ namespace YiSha.Data.EF.Database
         {
             await using var dbConnection = DbContext.Database.GetDbConnection();
             var dbHelper = new DbHelper(DbContext, dbConnection);
-            int total = (await dbHelper.ExecuteScalarAsync(CommandType.Text, DbPagingHelper.GetCountSql(sql), dbParameter)).ParseToInt();
+            int total = (await dbHelper.ExecuteScalarAsync(CommandType.Text, DbSqlHelper.GetCountSql(sql), dbParameter)).ParseToInt();
             if (total > 0)
             {
-                var pagingSql = DbPagingHelper.GetPagingSql(sql, sort, isAsc, pageSize, pageIndex);
+                var pagingSql = DbSqlHelper.GetPagingSql(sql, sort, isAsc, pageSize, pageIndex);
                 using var reader = await dbHelper.ExecuteReadeAsync(CommandType.Text, pagingSql, dbParameter);
                 return (total, reader.ToDataTable());
             }

@@ -57,7 +57,7 @@ namespace YiSha.Service.OrganizationManage
             {
                 expression = expression.And(t => t.Id != entity.Id);
             }
-            return BaseRepository().AsQueryable(expression).Any();
+            return BaseRepository().Set<UserEntity>().Any(expression);
         }
 
         #endregion

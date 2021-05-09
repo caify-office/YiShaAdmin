@@ -8,7 +8,7 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using YiSha.Util.Model;
 
-namespace YiSha.Data
+namespace YiSha.Data.Helper
 {
     public class DbHelper
     {
