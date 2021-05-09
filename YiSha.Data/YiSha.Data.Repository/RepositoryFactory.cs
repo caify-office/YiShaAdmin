@@ -7,7 +7,7 @@ namespace YiSha.Data.Repository
 {
     public class RepositoryFactory
     {
-        public Repository BaseRepository()
+        public static Repository BaseRepository()
         {
             switch (GlobalContext.SystemConfig.DbProvider)
             {

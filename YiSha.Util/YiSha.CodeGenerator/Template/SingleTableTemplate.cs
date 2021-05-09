@@ -793,7 +793,6 @@ namespace YiSha.CodeGenerator.Template
                 }
 
                 // 生成菜单
-                RepositoryFactory repositoryFactory = new RepositoryFactory();
                 List<KeyValue> buttonAuthorizeList = GetButtonAuthorizeList();
                 string menuUrl = $"{baseConfigModel.OutputConfig.OutputModule}/{baseConfigModel.FileConfig.ClassPrefix}/{baseConfigModel.FileConfig.PageIndexName}";
                 string modulePrefix = GetModulePrefix(baseConfigModel);
@@ -805,7 +804,7 @@ namespace YiSha.CodeGenerator.Template
                     MenuType = (int)MenuTypeEnum.Menu,
                     Authorize = $"{modulePrefix}:{classPrefix}:view"
                 };
-                TData obj = await AddMenu(repositoryFactory, menuEntity);
+                TData obj = await AddMenu(menuEntity);
                 if (obj.Tag == 1)
                 {
                     result.Add(new KeyValue { Key = "菜单(刷新页面可见)", Value = menuUrl });
@@ -820,7 +819,7 @@ namespace YiSha.CodeGenerator.Template
                             MenuType = (int)MenuTypeEnum.Button,
                             Authorize = $"{modulePrefix}:{classPrefix}:{button?.Value}"
                         };
-                        await AddMenu(repositoryFactory, buttonEntity);
+                        await AddMenu(buttonEntity);
                     }
                     foreach (string btn in baseConfigModel.PageIndex.ButtonList)
                     {
@@ -832,7 +831,7 @@ namespace YiSha.CodeGenerator.Template
                             MenuType = (int)MenuTypeEnum.Button,
                             Authorize = $"{modulePrefix}:{classPrefix}:{button?.Value}"
                         };
-                        await AddMenu(repositoryFactory, buttonEntity);
+                        await AddMenu(buttonEntity);
                     }
                     new MenuCache().Remove();
                 }
@@ -858,9 +857,9 @@ namespace YiSha.CodeGenerator.Template
             return result;
         }
 
-        private async Task<TData> AddMenu(RepositoryFactory repositoryFactory, MenuEntity menuEntity)
+        private async Task<TData> AddMenu(MenuEntity menuEntity)
         {
-            var menuList = await repositoryFactory.BaseRepository().FindList<MenuEntity>();
+            var menuList = await RepositoryFactory.BaseRepository().FindList<MenuEntity>();
             if (menuList.Any(p => p.MenuName == menuEntity.MenuName && p.Authorize == menuEntity.Authorize))
             {
                 return new();
@@ -868,7 +867,7 @@ namespace YiSha.CodeGenerator.Template
             menuEntity.MenuSort = menuList.Max(p => p.MenuSort) + 1;
             menuEntity.MenuStatus = 1;
             await menuEntity.Create();
-            await repositoryFactory.BaseRepository().Insert(menuEntity);
+            await RepositoryFactory.BaseRepository().Insert(menuEntity);
             return new() { Tag = 1 };
         }
 
