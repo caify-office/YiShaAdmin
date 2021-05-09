@@ -1,14 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
-    <LangVersion>9</LangVersion>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>netcoreapp3.1</TargetFramework>
+        <LangVersion>9</LangVersion>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\YiSha.Util\YiSha.Util\YiSha.Util.csproj" />
-    <ProjectReference Include="..\YiSha.Data.EF\YiSha.Data.EF.csproj" />
-    <ProjectReference Include="..\YiSha.Data.Util\YiSha.Data.Util.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\..\YiSha.Util\YiSha.Util\YiSha.Util.csproj"/>
+        <ProjectReference Include="..\YiSha.Data.EF\YiSha.Data.EF.csproj"/>
+        <ProjectReference Include="..\YiSha.Data.Util\YiSha.Data.Util.csproj"/>
+    </ItemGroup>
 
 </Project>
