@@ -10,28 +10,25 @@ namespace YiSha.Web.Code
 {
     public class Operator
     {
-        public static Operator Instance
-        {
-            get { return new(); }
-        }
+        public static Operator Instance => new();
 
         private readonly string _loginProvider = GlobalContext.Configuration.GetSection("SystemConfig:LoginProvider").Value;
-        private readonly string _tokenName = "UserToken"; //cookie name or session name
+        private const string _TokenName = "UserToken"; //cookie name or session name
 
         public async Task AddCurrent(string token)
         {
             switch (_loginProvider)
             {
                 case "Cookie":
-                    CookieHelper.WriteCookie(_tokenName, token);
+                    CookieHelper.WriteCookie(_TokenName, token);
                     break;
 
                 case "Session":
-                    SessionHelper.WriteSession(_tokenName, token);
+                    SessionHelper.WriteSession(_TokenName, token);
                     break;
 
                 case "WebApi":
-                    OperatorInfo user = await new DataRepository().GetUserByToken(token);
+                    var user = await new DataRepository().GetUserByToken(token);
                     if (user != null)
                     {
                         CacheFactory.Cache.SetCache(token, user);
@@ -45,17 +42,16 @@ namespace YiSha.Web.Code
         /// <summary>
         /// Api接口需要传入apiToken
         /// </summary>
-        /// <param name="apiToken"></param>
         public void RemoveCurrent(string apiToken = "")
         {
             switch (_loginProvider)
             {
                 case "Cookie":
-                    CookieHelper.RemoveCookie(_tokenName);
+                    CookieHelper.RemoveCookie(_TokenName);
                     break;
 
                 case "Session":
-                    SessionHelper.RemoveSession(_tokenName);
+                    SessionHelper.RemoveSession(_TokenName);
                     break;
 
                 case "WebApi":
@@ -66,49 +62,39 @@ namespace YiSha.Web.Code
             }
         }
 
+        private string GetToken(string apiToken = "")
+        {
+            var hca = GlobalContext.ServiceProvider?.GetService<IHttpContextAccessor>();
+            return _loginProvider switch
+            {
+                "Cookie" => hca?.HttpContext != null ? CookieHelper.GetCookie(_TokenName) : "",
+                "Session" => hca?.HttpContext != null ? SessionHelper.GetSession(_TokenName) : "",
+                "WebApi" => apiToken,
+                _ => ""
+            };
+        }
+
         /// <summary>
         /// Api接口需要传入apiToken
         /// </summary>
-        /// <param name="apiToken"></param>
-        /// <returns></returns>
         public async Task<OperatorInfo> Current(string apiToken = "")
         {
-            IHttpContextAccessor hca = GlobalContext.ServiceProvider?.GetService<IHttpContextAccessor>();
-            OperatorInfo user = null;
-            string token = string.Empty;
-            switch (_loginProvider)
-            {
-                case "Cookie":
-                    if (hca.HttpContext != null)
-                    {
-                        token = CookieHelper.GetCookie(_tokenName);
-                    }
-                    break;
-
-                case "Session":
-                    if (hca.HttpContext != null)
-                    {
-                        token = SessionHelper.GetSession(_tokenName);
-                    }
-                    break;
-
-                case "WebApi":
-                    token = apiToken;
-                    break;
-            }
+            string token = GetToken(apiToken)?.Trim('"');
             if (string.IsNullOrEmpty(token))
             {
                 return null;
             }
-            token = token.Trim('"');
-            user = CacheFactory.Cache.GetCache<OperatorInfo>(token);
-            if (user == null)
+
+            var user = CacheFactory.Cache.GetCache<OperatorInfo>(token);
+            if (user != null)
             {
-                user = await new DataRepository().GetUserByToken(token);
-                if (user != null)
-                {
-                    CacheFactory.Cache.SetCache(token, user);
-                }
+                return user;
+            }
+
+            user = await new DataRepository().GetUserByToken(token);
+            if (user != null)
+            {
+                CacheFactory.Cache.SetCache(token, user);
             }
             return user;
         }

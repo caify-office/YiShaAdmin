@@ -79,7 +79,7 @@ namespace YiSha.Admin.Web.Controllers
                 }
 
                 // 登出日志
-                await _logLoginBll.SaveForm(new LogLoginEntity
+                await _logLoginBll.SaveForm(new ()
                 {
                     LogStatus = OperateStatusEnum.Success.ParseToInt(),
                     Remark = "退出系统",
@@ -95,7 +95,7 @@ namespace YiSha.Admin.Web.Controllers
                 CookieHelper.RemoveCookie("RememberMe");
             }
 
-            #endregion 退出系统
+            #endregion
 
             return View(nameof(Login));
         }
@@ -125,9 +125,9 @@ namespace YiSha.Admin.Web.Controllers
 
         public IActionResult GetCaptchaImage()
         {
-            _ = GlobalContext.ServiceProvider?.GetService<IHttpContextAccessor>().HttpContext.Session.Id;
+            _ = GlobalContext.ServiceProvider?.GetService<IHttpContextAccessor>()?.HttpContext.Session.Id;
 
-            Tuple<string, int> captchaCode = CaptchaHelper.GetCaptchaCode();
+            var captchaCode = CaptchaHelper.GetCaptchaCode();
             byte[] bytes = CaptchaHelper.CreateCaptchaImage(captchaCode.Item1);
             SessionHelper.WriteSession("CaptchaCode", captchaCode.Item2);
             return File(bytes, @"image/jpeg");

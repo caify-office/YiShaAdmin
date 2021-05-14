@@ -1,5 +1,6 @@
-﻿<!--Areas文件夹下表单页面白色背景模板-->
-@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment HostingEnvironment
+﻿@using Microsoft.AspNetCore.Hosting
+<!--Areas文件夹下表单页面白色背景模板-->
+@inject IWebHostEnvironment HostingEnvironment
 <!DOCTYPE HTML>
 <html>
 <head>
@@ -11,14 +12,14 @@
 
     @await Html.PartialAsync("_Form.cshtml")
 
-    @RenderSection("header", false)
+    @await RenderSectionAsync("header", false)
     <script type="text/javascript">
         var ctx = '@Url.Content("~/")';
     </script>
 </head>
 <body class="white-bg">
     @RenderBody()
-    @RenderSection("footer", false)
+    @await RenderSectionAsync("footer", false)
 
     @BundlerHelper.Render(HostingEnvironment.ContentRootPath, Url.Content("~/yisha/css/yisha.min.css"))
     @BundlerHelper.Render(HostingEnvironment.ContentRootPath, Url.Content("~/yisha/js/yisha-init.min.js"))

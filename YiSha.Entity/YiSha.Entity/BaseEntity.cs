@@ -26,9 +26,9 @@ namespace YiSha.Entity
         /// WebApi没有Cookie和Session，所以需要传入Token来标识用户身份
         /// </summary>
         [NotMapped]
-        public string Token { get; set; }
+        protected string Token { get; set; }
 
-        public virtual void Create()
+        protected virtual void Create()
         {
             Id = IdGeneratorHelper.Instance.GetId();
         }
@@ -51,25 +51,12 @@ namespace YiSha.Entity
         {
             base.Create();
 
-            if (BaseCreateTime == null)
-            {
-                BaseCreateTime = DateTime.Now;
-            }
+            BaseCreateTime ??= DateTime.Now;
 
             if (BaseCreatorId == null)
             {
-                OperatorInfo user = await Operator.Instance.Current(Token);
-                if (user != null)
-                {
-                    BaseCreatorId = user.UserId;
-                }
-                else
-                {
-                    if (BaseCreatorId == null)
-                    {
-                        BaseCreatorId = 0;
-                    }
-                }
+                var user = await Operator.Instance.Current(Token);
+                BaseCreatorId = user?.UserId ?? 0;
             }
         }
     }
@@ -92,25 +79,15 @@ namespace YiSha.Entity
         /// </summary>
         public long? BaseModifierId { get; set; }
 
-        public async Task Modify()
+        protected async Task Modify()
         {
             BaseVersion = 0;
             BaseModifyTime = DateTime.Now;
 
             if (BaseModifierId == null)
             {
-                OperatorInfo user = await Operator.Instance.Current();
-                if (user != null)
-                {
-                    BaseModifierId = user.UserId;
-                }
-                else
-                {
-                    if (BaseModifierId == null)
-                    {
-                        BaseModifierId = 0;
-                    }
-                }
+                var user = await Operator.Instance.Current();
+                BaseModifierId = user?.UserId ?? 0;
             }
         }
     }
@@ -138,9 +115,9 @@ namespace YiSha.Entity
         }
     }
 
-    public class BaseField
+    public static class BaseField
     {
-        public static string[] BaseFieldList = new[]
+        public static readonly string[] BaseFieldList =
         {
             "Id",
             "BaseIsDelete",

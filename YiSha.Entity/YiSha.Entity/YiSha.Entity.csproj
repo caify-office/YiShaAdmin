@@ -6,9 +6,13 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\YiSha.Util\YiSha.IdGenerator\YiSha.IdGenerator.csproj"/>
-        <ProjectReference Include="..\..\YiSha.Util\YiSha.Util\YiSha.Util.csproj"/>
-        <ProjectReference Include="..\..\YiSha.Web\YiSha.Web.Code\YiSha.Web.Code.csproj"/>
+        <ProjectReference Include="..\..\YiSha.Util\YiSha.IdGenerator\YiSha.IdGenerator.csproj" />
+        <ProjectReference Include="..\..\YiSha.Util\YiSha.Util\YiSha.Util.csproj" />
+        <ProjectReference Include="..\..\YiSha.Web\YiSha.Web.Code\YiSha.Web.Code.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
     </ItemGroup>
 
 </Project>

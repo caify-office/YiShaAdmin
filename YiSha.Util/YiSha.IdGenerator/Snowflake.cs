@@ -18,18 +18,18 @@ namespace YiSha.IdGenerator
         private const int _TimestampLeftShift = _SequenceBits + _WorkerIdBits + _DatacenterIdBits;
         private const long _SequenceMask = -1L ^ (-1L << _SequenceBits);
 
-        private long _sequence = 0L;
+        private long _sequence;
         private long _lastTimestamp = -1L;
 
         /// <summary>
         ///10位的数据机器位中的高位
         /// </summary>
-        public long WorkerId { get; protected set; }
+        private long WorkerId { get; }
 
         /// <summary>
         /// 10位的数据机器位中的低位
         /// </summary>
-        public long DatacenterId { get; protected set; }
+        private long DatacenterId { get; }
 
         private readonly object _lock = new();
 
@@ -45,18 +45,18 @@ namespace YiSha.IdGenerator
             DatacenterId = datacenterId;
             _sequence = sequence;
 
-            if (workerId > _MaxWorkerId || workerId < 0)
+            if (workerId is > _MaxWorkerId or < 0)
             {
                 throw new ArgumentException($"worker Id can't be greater than {_MaxWorkerId} or less than 0");
             }
 
-            if (datacenterId > _MaxDatacenterId || datacenterId < 0)
+            if (datacenterId is > _MaxDatacenterId or < 0)
             {
                 throw new ArgumentException($"datacenter Id can't be greater than {_MaxDatacenterId} or less than 0");
             }
         }
 
-        public long CurrentId { get; private set; }
+        private long CurrentId { get; set; }
 
         /// <summary>
         /// 获取下一个Id，该方法线程安全
@@ -93,7 +93,7 @@ namespace YiSha.IdGenerator
             }
         }
 
-        private long TilNextMillis(long lastTimestamp)
+        private static long TilNextMillis(long lastTimestamp)
         {
             var timestamp = DateTimeHelper.GetUnixTimeStamp(DateTime.Now);
             while (timestamp <= lastTimestamp)

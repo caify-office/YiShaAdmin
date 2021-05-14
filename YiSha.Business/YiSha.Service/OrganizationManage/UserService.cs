@@ -41,18 +41,18 @@ namespace YiSha.Service.OrganizationManage
 
         public async Task<UserEntity> CheckLogin(string userName)
         {
-            var expression = LinqExtensions.True<UserEntity>();
-            expression = expression.And(t => t.UserName == userName);
-            expression = expression.Or(t => t.Mobile == userName);
-            expression = expression.Or(t => t.Email == userName);
+            var expression = LinqExtensions.True<UserEntity>()
+                                           .And(t => t.UserName == userName)
+                                           .Or(t => t.Mobile == userName)
+                                           .Or(t => t.Email == userName);
             return await BaseRepository().FindEntity(expression);
         }
 
         public bool ExistUserName(UserEntity entity)
         {
-            var expression = LinqExtensions.True<UserEntity>();
-            expression = expression.And(t => t.BaseIsDelete == 0);
-            expression = expression.And(t => t.UserName == entity.UserName);
+            var expression = LinqExtensions.True<UserEntity>()
+                                           .And(t => t.BaseIsDelete == 0)
+                                           .And(t => t.UserName == entity.UserName);
             if (!entity.Id.IsNullOrZero())
             {
                 expression = expression.And(t => t.Id != entity.Id);
@@ -71,22 +71,22 @@ namespace YiSha.Service.OrganizationManage
 
         public async Task SaveForm(UserEntity entity)
         {
-            var db = await BaseRepository().BeginTrans();
+            var repo = await BaseRepository().BeginTrans();
             try
             {
                 if (entity.Id.IsNullOrZero())
                 {
                     await entity.Create();
-                    await db.Insert(entity);
+                    await repo.Insert(entity);
                 }
                 else
                 {
-                    await db.Delete<UserBelongEntity>(t => t.UserId == entity.Id);
+                    await repo.Delete<UserBelongEntity>(t => t.UserId == entity.Id);
 
                     // 密码不进行更新，有单独的方法更新密码
                     entity.Password = null;
                     await entity.Modify();
-                    await db.Update(entity);
+                    await repo.Update(entity);
                 }
 
                 // 职位
@@ -101,7 +101,7 @@ namespace YiSha.Service.OrganizationManage
                             BelongType = UserBelongTypeEnum.Position.ParseToInt()
                         };
                         await positionBelongEntity.Create();
-                        await db.Insert(positionBelongEntity);
+                        await repo.Insert(positionBelongEntity);
                     }
                 }
 
@@ -117,14 +117,14 @@ namespace YiSha.Service.OrganizationManage
                             BelongType = UserBelongTypeEnum.Role.ParseToInt()
                         };
                         await departmentBelongEntity.Create();
-                        await db.Insert(departmentBelongEntity);
+                        await repo.Insert(departmentBelongEntity);
                     }
                 }
-                await db.CommitTrans();
+                await repo.CommitTrans();
             }
             catch
             {
-                await db.RollbackTrans();
+                await repo.RollbackTrans();
                 throw;
             }
         }
