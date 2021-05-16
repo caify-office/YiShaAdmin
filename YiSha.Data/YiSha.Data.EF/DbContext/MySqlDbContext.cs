@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using System;
 using System.Collections.Concurrent;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -18,13 +17,9 @@ namespace YiSha.Data.EF.DbContext
 
         private string ConnectionString { get; }
 
-        private ServerVersion ServerVersion { get; }
-
         public MySqlDbContext(string connectionString)
         {
             ConnectionString = connectionString;
-            var versions = TextHelper.SplitToArray<int>(GlobalContext.SystemConfig.DbVersion, '.');
-            ServerVersion = new MySqlServerVersion(new Version(versions[0], versions[1]));
         }
 
         #region 重载
@@ -35,7 +30,7 @@ namespace YiSha.Data.EF.DbContext
             {
                 builder.UseLoggerFactory(_loggerFactory)
                        .AddInterceptors(new DbCommandCustomInterceptor())
-                       .UseMySql(ConnectionString, ServerVersion, o => o.CommandTimeout(GlobalContext.SystemConfig.DbCommandTimeout));
+                       .UseMySql(ConnectionString, ServerVersion.AutoDetect(ConnectionString), o => o.CommandTimeout(GlobalContext.SystemConfig.DbCommandTimeout));
             }
         }
 
@@ -43,8 +38,8 @@ namespace YiSha.Data.EF.DbContext
         {
             var entityAssembly = Assembly.Load(new AssemblyName("YiSha.Entity"));
             var types = entityAssembly.GetTypes()
-                                                .Where(p => p.Namespace?.Length > 0)
-                                                .Where(p => p.GetCustomAttribute<TableAttribute>()?.Name.Length > 0);
+                                      .Where(p => p.Namespace?.Length > 0)
+                                      .Where(p => p.GetCustomAttribute<TableAttribute>()?.Name.Length > 0);
 
             foreach (var type in types)
             {

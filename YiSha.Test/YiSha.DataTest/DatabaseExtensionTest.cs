@@ -110,5 +110,14 @@ namespace YiSha.DataTest
             var result = await RepositoryFactory.BaseRepository().FindEntity<dynamic>(sql, DbParameterHelper.CreateDbParameter("@Id", 16508640061130151));
             Assert.IsTrue(result.UserName == "admin");
         }
+
+        [Test]
+        public async Task AnonymousDbParameterTest()
+        {
+            var repositoryFactory = RepositoryFactory.BaseRepository();
+            var sql = @"select UserName from SysUser where Id = @Id";
+            var result = await repositoryFactory.FindEntityAnonymousParameter<string>(sql, new { Id = 16508640061130151 });
+            Assert.IsTrue(result == "admin");
+        }
     }
 }

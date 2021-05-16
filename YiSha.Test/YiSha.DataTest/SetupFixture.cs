@@ -12,7 +12,7 @@ namespace YiSha.DataTest
             GlobalContext.SystemConfig = new SystemConfig
             {
                 DbProvider = "MySql",
-                DbConnectionString = "server=localhost;database=YiShaAdmin;user=root;password=123456;port=3306;",
+                DbConnectionString = "server=121.40.169.153;database=yishaadmin;user=root;password=fy?xK/qYR75e;port=3306;",
                 DbCommandTimeout = 180,
                 DbBackup = "DataBase"
             };

@@ -6,6 +6,7 @@ using System.Data.Common;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using YiSha.Data.EF.Database;
+using YiSha.Data.Helper;
 using YiSha.Util.Model;
 
 namespace YiSha.Data.Repository
@@ -149,6 +150,17 @@ namespace YiSha.Data.Repository
         public async Task<T> FindEntity<T>(string sql, params DbParameter[] dbParameter)
         {
             return await Database.FindEntity<T>(sql, dbParameter);
+        }
+
+        public async Task<T> FindEntityAnonymousParameter<T>(string sql, object param = null)
+        {
+            if (param == null)
+            {
+                return await Database.FindEntity<T>(sql);
+            }
+            var func = DbParameterHelper.CreateParameterFunc(sql, param);
+            var parameters = func(param);
+            return await Database.FindEntity<T>(sql, parameters);
         }
 
         public async Task<List<T>> FindList<T>() where T : class, new()
