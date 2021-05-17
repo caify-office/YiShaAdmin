@@ -2,10 +2,12 @@
 using MySqlConnector;
 using Oracle.ManagedDataAccess.Client;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using YiSha.Util.Extension;
 
@@ -38,6 +40,60 @@ namespace YiSha.Data.Helper
         /// </summary>
         public static Func<object, DbParameter[]> CreateParameterFunc(string sql, object param)
         {
+            return CreateDbParameterCache.GetFunc(sql, param);
+        }
+    }
+
+    internal class ParameterCacheIdentity
+    {
+        private readonly string _sql;
+        private readonly Type _type;
+        private readonly int _hashCode;
+
+        public ParameterCacheIdentity(Type type, string sql)
+        {
+            _type = type;
+            _sql = sql;
+            unchecked
+            {
+                _hashCode = 17;
+                _hashCode = _hashCode * 23 + (type?.GetHashCode() ?? 0);
+                _hashCode = _hashCode * 23 + (sql?.GetHashCode() ?? 0);
+            }
+        }
+
+        public override int GetHashCode() => _hashCode;
+
+        public override bool Equals(object obj)
+        {
+            var other = obj as ParameterCacheIdentity;
+            if (ReferenceEquals(this, other)) return true;
+            if (ReferenceEquals(other, null)) return false;
+
+            return _type == other._type && _sql == other._sql;
+        }
+    }
+
+    internal sealed class CreateDbParameterCache : ConcurrentDictionary<int, Func<object, DbParameter[]>>
+    {
+        private static readonly ConcurrentDictionary<ParameterCacheIdentity, Func<object, DbParameter[]>> _caches = new();
+
+        internal static Func<object, DbParameter[]> GetFunc(string sql, object param)
+        {
+            var identity = new ParameterCacheIdentity(param.GetType(), sql);
+            if (!_caches.ContainsKey(identity))
+            {
+                _caches.TryAdd(identity, CreateParameterFunc(sql, param));
+            }
+            var _ = _caches.TryGetValue(identity, out var value);
+            return value;
+        }
+
+        /// <summary>
+        /// 简单匿名参数映射
+        /// </summary>
+        private static Func<object, DbParameter[]> CreateParameterFunc(string sql, object param)
+        {
             // 1. 反射参数对象，获取匿名对象信息
             var type = param.GetType();
             var props = type.GetProperties().Where(p => p.GetIndexParameters().Length == 0);
@@ -55,24 +111,19 @@ namespace YiSha.Data.Helper
 
             var listExp = Expression.Variable(typeof(DbParameter[]), "list");
             var ctor = typeof(DbParameter[]).GetConstructor(new[] { typeof(int) });
-            var newExp = Expression.New(ctor, Expression.Constant(props.Count()));
-            expressions.Add(Expression.Assign(listExp, newExp));
+            var ctorExp = Expression.New(ctor, Expression.Constant(props.Count()));
+            expressions.Add(Expression.Assign(listExp, ctorExp));
 
             // 需要使用到的方法
-            var createMi = typeof(DbParameterHelper).GetMethod("CreateDbParameter", new[] { typeof(string), typeof(object) });
             var setMi = typeof(DbParameter[]).GetMethod("Set", new[] { typeof(int), typeof(DbParameter) });
 
             int i = 0;
             foreach (var prop in props)
             {
-                var nameExp = Expression.Constant("@" + prop.Name);
-                var valueExp = Expression.Call(objExp, prop.GetGetMethod());
-                var boxExp = Expression.Convert(valueExp, typeof(object));
-                var createExp = Expression.Call(createMi, nameExp, boxExp);
-                var set2Exp = Expression.Call(listExp, setMi, Expression.Constant(i++), createExp);
-                expressions.Add(set2Exp);
+                var newExp = NewParameter(prop, objExp);
+                var setExp = Expression.Call(listExp, setMi, Expression.Constant(i++), newExp);
+                expressions.Add(setExp);
             }
-
             // int i = 0;
             // expressions.AddRange(from prop in props
             //                      let nameExp = Expression.Constant("@" + prop.Name)
@@ -95,10 +146,25 @@ namespace YiSha.Data.Helper
                 return sb.Append(')').ToStringRecycle();
             }, RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant);
             */
-
             expressions.Add(listExp);
             var body = Expression.Block(new[] { listExp, objExp }, expressions);
             return Expression.Lambda<Func<object, DbParameter[]>>(body, paramExp).Compile();
+        }
+
+        private static MethodCallExpression NewParameter(PropertyInfo prop, Expression objExp)
+        {
+            var createMi = typeof(DbParameterHelper).GetMethod("CreateDbParameter", new[] { typeof(string), typeof(object) });
+            var nameExp = Expression.Constant("@" + prop.Name);
+            var valueExp = Expression.Call(objExp, prop.GetGetMethod());
+
+            if (prop.PropertyType.IsValueType)
+            {
+                var boxExp = Expression.Convert(valueExp, typeof(object));
+                return Expression.Call(createMi, nameExp, boxExp);
+            }
+            if (prop.PropertyType.IsEnum) { }
+
+            return Expression.Call(createMi, nameExp, valueExp);
         }
 
         private static string GetInListRegex(string name)
