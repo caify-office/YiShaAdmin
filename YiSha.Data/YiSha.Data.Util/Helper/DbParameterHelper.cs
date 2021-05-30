@@ -2,9 +2,11 @@
 using MySqlConnector;
 using Oracle.ManagedDataAccess.Client;
 using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data.Common;
+using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -15,6 +17,8 @@ namespace YiSha.Data.Helper
 {
     public static class DbParameterHelper
     {
+        private const RegexOptions _Options = RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant;
+
         /// <summary>
         /// 根据配置文件中所配置的数据库类型
         /// 来创建相应数据库的参数对象
@@ -42,40 +46,92 @@ namespace YiSha.Data.Helper
         {
             return CreateDbParameterCache.GetFunc(sql, param);
         }
-    }
 
-    internal class ParameterCacheIdentity
-    {
-        private readonly string _sql;
-        private readonly Type _type;
-        private readonly int _hashCode;
-
-        public ParameterCacheIdentity(Type type, string sql)
+        public static DbParameter[] CreateParameters(ref string sql, object param = null)
         {
-            _type = type;
-            _sql = sql;
-            unchecked
+            if (param == null)
             {
-                _hashCode = 17;
-                _hashCode = _hashCode * 23 + (type?.GetHashCode() ?? 0);
-                _hashCode = _hashCode * 23 + (sql?.GetHashCode() ?? 0);
+                return default;
             }
+
+            var strSql = sql;
+            var list = new List<DbParameter>();
+            if (param is ExpandoObject)
+            {
+                var dict = (IDictionary<string, object>)param;
+                foreach (var (key, value) in dict)
+                {
+                    var parameters = ResovleParameter(ref sql, strSql, key, value, value.GetType().GetUnderlyingType());
+                    list.AddRange(parameters);
+                }
+            }
+            else
+            {
+                foreach (var prop in param.GetType().GetProperties())
+                {
+                    var parameter = ResovleParameter(ref sql, strSql, prop.Name, prop.GetValue(param), prop.PropertyType.GetUnderlyingType());
+                    list.AddRange(parameter);
+                }
+            }
+            return list.ToArray();
         }
 
-        public override int GetHashCode() => _hashCode;
-
-        public override bool Equals(object obj)
+        private static IEnumerable<DbParameter> ResovleParameter(ref string sql, string strSql, string name, object value, Type propType)
         {
-            var other = obj as ParameterCacheIdentity;
-            if (ReferenceEquals(this, other)) return true;
-            if (ReferenceEquals(other, null)) return false;
-
-            return _type == other._type && _sql == other._sql;
+            var list = new List<DbParameter>();
+            if (Regex.IsMatch(strSql, $@"[?@:]{name}([^\p{{L}}\p{{N}}_]+|$)", _Options))
+            {
+                if (propType.IsElementaryType())
+                {
+                    list.Add(CreateDbParameter($"@{name}", value));
+                }
+                else if (typeof(IEnumerable).IsAssignableFrom(propType))
+                {
+                    int i = 0;
+                    foreach (var item in (IEnumerable)value)
+                    {
+                        list.Add(CreateDbParameter($"@{name}{i++}", item));
+                    }
+                    var paramStr = string.Join(",", list.Select(x => x.ParameterName));
+                    sql = Regex.Replace(sql, $"[?@:]{Regex.Escape(name)}", $"({paramStr})", _Options);
+                }
+            }
+            return list;
         }
     }
 
     internal sealed class CreateDbParameterCache : ConcurrentDictionary<int, Func<object, DbParameter[]>>
     {
+        private class ParameterCacheIdentity
+        {
+            private readonly string _sql;
+            private readonly Type _type;
+            private readonly int _hashCode;
+
+            public ParameterCacheIdentity(Type type, string sql)
+            {
+                _type = type;
+                _sql = sql;
+                unchecked
+                {
+                    _hashCode = 17;
+                    _hashCode = _hashCode * 23 + (type?.GetHashCode() ?? 0);
+                    _hashCode = _hashCode * 23 + (sql?.GetHashCode() ?? 0);
+                }
+            }
+
+            public override int GetHashCode() => _hashCode;
+
+            public override bool Equals(object obj)
+            {
+                var other = obj as ParameterCacheIdentity;
+                if (ReferenceEquals(this, other)) return true;
+                if (ReferenceEquals(other, null)) return false;
+
+                return _type == other._type && _sql == other._sql;
+            }
+        }
+
         private static readonly ConcurrentDictionary<ParameterCacheIdentity, Func<object, DbParameter[]>> _caches = new();
 
         internal static Func<object, DbParameter[]> GetFunc(string sql, object param)

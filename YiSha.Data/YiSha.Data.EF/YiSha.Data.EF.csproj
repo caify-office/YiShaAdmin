@@ -6,19 +6,19 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Compile Remove="Database\OracleDatabase.cs"/>
-        <Compile Remove="DbContext\OracleDbContext.cs"/>
+        <Compile Remove="Database\OracleDatabase.cs" />
+        <Compile Remove="DbContext\OracleDbContext.cs" />
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="5.0.5"/>
-        <PackageReference Include="Oracle.ManagedDataAccess.Core" Version="3.21.1"/>
-        <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="5.0.0"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="5.0.5" />
+        <PackageReference Include="Oracle.ManagedDataAccess.Core" Version="3.21.1" />
+        <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="5.0.0" />
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\YiSha.Util\YiSha.Util\YiSha.Util.csproj"/>
-        <ProjectReference Include="..\YiSha.Data.Util\YiSha.Data.Util.csproj"/>
+        <ProjectReference Include="..\..\YiSha.Util\YiSha.Util\YiSha.Util.csproj" />
+        <ProjectReference Include="..\YiSha.Data.Util\YiSha.Data.Util.csproj" />
     </ItemGroup>
 
 </Project>

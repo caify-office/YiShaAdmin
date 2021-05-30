@@ -8,7 +8,6 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using YiSha.Util.Helper;
-using TypeExtensions = YiSha.Util.Extension.TypeExtensions;
 
 namespace YiSha.Data.Extension
 {
@@ -40,7 +39,7 @@ namespace YiSha.Data.Extension
             {
                 var list = new List<T>();
 
-                if (TypeExtensions.IsElementaryType(typeof(T)))
+                if (typeof(T).IsElementaryType())
                 {
                     while (reader.Read())
                     {
@@ -74,7 +73,7 @@ namespace YiSha.Data.Extension
         {
             using (reader)
             {
-                if (TypeExtensions.IsElementaryType(typeof(T)))
+                if (typeof(T).IsElementaryType())
                 {
                     while (reader.Read())
                     {
@@ -102,7 +101,7 @@ namespace YiSha.Data.Extension
         {
             using (reader)
             {
-                if (TypeExtensions.IsElementaryType(typeof(T)))
+                if (typeof(T).IsElementaryType())
                 {
                     if (reader.Read())
                     {
@@ -152,53 +151,6 @@ namespace YiSha.Data.Extension
         }
     }
 
-    internal class MappingMemberInfo
-    {
-        public int Index { get; set; }
-
-        public string ColumnName { get; set; }
-
-        public PropertyInfo PropertyInfo { get; set; }
-    }
-
-    internal class CacheIdentity
-    {
-        private readonly Type _type;
-        private readonly string _sql;
-        private readonly int _hashCode;
-        private readonly IEnumerable<MappingMemberInfo> _memberInfos;
-
-        /*
-         * 使用SQL语句和映射类型作为缓存
-         * 可以考虑更多的属性作为缓存标识
-         * 例如添加连接字符串就可以实现多数据库缓存
-         */
-        public CacheIdentity(string sql, Type type, IEnumerable<MappingMemberInfo> memberInfos)
-        {
-            _sql = sql;
-            _type = type;
-            _memberInfos = memberInfos;
-            unchecked
-            {
-                _hashCode = 17;
-                _hashCode = _hashCode * 23 + (sql?.GetHashCode() ?? 0);
-                _hashCode = _hashCode * 23 + (type?.GetHashCode() ?? 0);
-                _hashCode = _hashCode * 23 + (memberInfos?.GetHashCode() ?? 0);
-            }
-        }
-
-        public override int GetHashCode() => _hashCode;
-
-        public override bool Equals(object obj)
-        {
-            var other = obj as CacheIdentity;
-            if (ReferenceEquals(this, other)) return true;
-            if (ReferenceEquals(other, null)) return false;
-
-            return _type == other._type && _memberInfos == other._memberInfos && _sql == other._sql;
-        }
-    }
-
     internal sealed class ReaderMapperCache<T> : Dictionary<int, Func<IDataRecord, T>>
     {
         private static readonly ConcurrentDictionary<CacheIdentity, Func<IDataRecord, T>> _funcCaches = new();
@@ -244,23 +196,9 @@ namespace YiSha.Data.Extension
             return Expression.Lambda<Func<IDataRecord, T>>(body, readerExp).Compile();
         }
 
-        private static IEnumerable<MappingMemberInfo> GetMemberInfos(IDataRecord reader)
-        {
-            var props = ReflectionHelper.GetProperties(typeof(T));
-            var members = Enumerable.Range(0, reader.FieldCount)
-                                    .Select(reader.GetName)
-                                    .Select((name, i) => new MappingMemberInfo
-                                    {
-                                        Index = i,
-                                        ColumnName = name,
-                                        PropertyInfo = props.First(p => string.Equals(p.Name, name, StringComparison.CurrentCultureIgnoreCase))
-                                    });
-            return members;
-        }
-
         private static UnaryExpression ConvertExpression(Expression getItemExp, Type type)
         {
-            var underlyingType = TypeExtensions.GetUnderlyingType(type);
+            var underlyingType = type.GetUnderlyingType();
             if (underlyingType.IsEnum)
             {
                 var method = typeof(System.Enum).GetMethod("ToObject", new[] { typeof(Type), typeof(object) });
@@ -276,6 +214,74 @@ namespace YiSha.Data.Extension
             var changeType = typeof(Convert).GetMethod("ChangeType", new[] { typeof(object), typeof(Type) });
             var changeTypeExp = Expression.Call(changeType, new[] { getItemExp, Expression.Constant(underlyingType) });
             return Expression.Convert(changeTypeExp, type);
+        }
+
+        private static IEnumerable<MappingMemberInfo> GetMemberInfos(IDataRecord reader)
+        {
+            var props = ReflectionHelper.GetProperties(typeof(T));
+            var list = new List<MappingMemberInfo>();
+            for (var i = 0; i < reader.FieldCount; i++)
+            {
+                var field = reader.GetName(i);
+                var prop = props.FirstOrDefault(p => string.Equals(p.Name, field, StringComparison.CurrentCultureIgnoreCase));
+                if (prop != null)
+                {
+                    list.Add(new MappingMemberInfo
+                    {
+                        Index = i,
+                        ColumnName = field,
+                        PropertyInfo = prop
+                    });
+                }
+            }
+            return list;
+        }
+
+        private class MappingMemberInfo
+        {
+            public int Index { get; set; }
+
+            public string ColumnName { get; set; }
+
+            public PropertyInfo PropertyInfo { get; set; }
+        }
+
+        private class CacheIdentity
+        {
+            private readonly Type _type;
+            private readonly string _sql;
+            private readonly int _hashCode;
+            private readonly IEnumerable<MappingMemberInfo> _memberInfos;
+
+            /*
+             * 使用SQL语句和映射类型作为缓存
+             * 可以考虑更多的属性作为缓存标识
+             * 例如添加连接字符串就可以实现多数据库缓存
+             */
+            public CacheIdentity(string sql, Type type, IEnumerable<MappingMemberInfo> memberInfos)
+            {
+                _sql = sql;
+                _type = type;
+                _memberInfos = memberInfos;
+                unchecked
+                {
+                    _hashCode = 17;
+                    _hashCode = _hashCode * 23 + (sql?.GetHashCode() ?? 0);
+                    _hashCode = _hashCode * 23 + (type?.GetHashCode() ?? 0);
+                    _hashCode = _hashCode * 23 + (memberInfos?.GetHashCode() ?? 0);
+                }
+            }
+
+            public override int GetHashCode() => _hashCode;
+
+            public override bool Equals(object obj)
+            {
+                var other = obj as CacheIdentity;
+                if (ReferenceEquals(this, other)) return true;
+                if (ReferenceEquals(other, null)) return false;
+
+                return _type == other._type && _memberInfos == other._memberInfos && _sql == other._sql;
+            }
         }
     }
 }

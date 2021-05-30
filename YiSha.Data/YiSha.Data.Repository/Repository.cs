@@ -22,14 +22,11 @@ namespace YiSha.Data.Repository
 
         private IDatabase Database { get; }
 
-        public DbContext DbContext { get; }
-
-        public DbSet<TEntity> Set<TEntity>() where TEntity : class => DbContext.Set<TEntity>();
+        public DbSet<TEntity> Set<TEntity>() where TEntity : class => Database.DbContext.Set<TEntity>();
 
         public Repository(IDatabase database)
         {
             Database = database;
-            DbContext = database.DbContext;
         }
 
         #endregion
@@ -158,9 +155,7 @@ namespace YiSha.Data.Repository
             {
                 return await Database.FindEntity<T>(sql);
             }
-            var func = DbParameterHelper.CreateParameterFunc(sql, param);
-            var parameters = func(param);
-            return await Database.FindEntity<T>(sql, parameters);
+            return await Database.FindEntity<T>(sql, DbParameterHelper.CreateParameters(ref sql, param));
         }
 
         public async Task<List<T>> FindList<T>() where T : class, new()

@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -12,53 +13,43 @@ namespace YiSha.Data.EF.DbContext
     public class SqlServerDbContext : Microsoft.EntityFrameworkCore.DbContext
     {
         private static readonly ILoggerFactory _loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
+        private static readonly IInterceptor _interceptor = new DbCommandCustomInterceptor();
 
-        private string ConnectionString { get; set; }
-
-        #region 构造函数
+        private string ConnectionString { get; }
 
         public SqlServerDbContext(string connectionString)
         {
             ConnectionString = connectionString;
         }
 
-        #endregion
-
-        #region 重载
-
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseSqlServer(ConnectionString, p => p.CommandTimeout(GlobalContext.SystemConfig.DbCommandTimeout));
-            optionsBuilder.AddInterceptors(new DbCommandCustomInterceptor());
-            optionsBuilder.UseLoggerFactory(_loggerFactory);
+            if (!optionsBuilder.IsConfigured)
+            {
+                optionsBuilder.AddInterceptors(_interceptor);
+                optionsBuilder.UseSqlServer(ConnectionString, p => p.CommandTimeout(GlobalContext.SystemConfig.DbCommandTimeout));
+                optionsBuilder.UseLoggerFactory(_loggerFactory);
+                optionsBuilder.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+            }
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            Assembly entityAssembly = Assembly.Load(new AssemblyName("YiSha.Entity"));
-            IEnumerable<Type> typesToRegister = entityAssembly.GetTypes().Where(p => !string.IsNullOrEmpty(p.Namespace))
-                                                              .Where(p => !string.IsNullOrEmpty(p.GetCustomAttribute<TableAttribute>()?.Name));
-            foreach (Type type in typesToRegister)
+            var entityAssembly = Assembly.Load(new AssemblyName("YiSha.Entity"));
+            var typesToRegister = entityAssembly.GetTypes().Where(p => !string.IsNullOrEmpty(p.Namespace))
+                                                .Where(p => !string.IsNullOrEmpty(p.GetCustomAttribute<TableAttribute>()?.Name));
+            foreach (var type in typesToRegister)
             {
-                dynamic configurationInstance = Activator.CreateInstance(type);
                 modelBuilder.Model.AddEntityType(type);
             }
             foreach (var entity in modelBuilder.Model.GetEntityTypes())
             {
-                PrimaryKeyConvention.SetPrimaryKey(modelBuilder, entity.Name);
-                string currentTableName = modelBuilder.Entity(entity.Name).Metadata.GetTableName();
+                var currentTableName = modelBuilder.Entity(entity.Name).Metadata.GetTableName();
                 modelBuilder.Entity(entity.Name).ToTable(currentTableName);
-
-                //var properties = entity.GetProperties();
-                //foreach (var property in properties)
-                //{
-                //    ColumnConvention.SetColumnName(modelBuilder, entity.Name, property.Name);
-                //}
+                modelBuilder.Entity(entity.Name).HasKey("Id");
             }
 
             base.OnModelCreating(modelBuilder);
         }
-
-        #endregion
     }
 }

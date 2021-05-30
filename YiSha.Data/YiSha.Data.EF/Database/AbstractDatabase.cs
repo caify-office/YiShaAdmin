@@ -14,6 +14,99 @@ using YiSha.Util.Helper;
 
 namespace YiSha.Data.EF.Database
 {
+    public interface IDatabase
+    {
+        #region 属性
+
+        /// <summary>
+        /// 获取 当前使用的数据访问上下文对象
+        /// </summary>
+        public Microsoft.EntityFrameworkCore.DbContext DbContext { get; set; }
+
+        /// <summary>
+        /// 事务对象
+        /// </summary>
+        public IDbContextTransaction DbContextTransaction { get; set; }
+
+        #endregion
+
+        #region Transaction
+
+        Task<IDatabase> BeginTrans();
+
+        Task<int> CommitTrans();
+
+        Task RollbackTrans();
+
+        #endregion
+
+        #region Execute
+
+        Task<int> ExecuteBySql(string sql, params DbParameter[] dbParameter);
+
+        Task<int> ExecuteByProc(string procName, params DbParameter[] dbParameter);
+
+        #endregion
+
+        #region Insert
+
+        Task<int> Insert<T>(T entity) where T : class;
+
+        Task<int> Insert<T>(IEnumerable<T> entities) where T : class;
+
+        #endregion
+
+        #region Delete
+
+        Task<int> Delete<T>() where T : class;
+
+        Task<int> Delete<T>(T entity) where T : class;
+
+        Task<int> Delete<T>(IEnumerable<T> entities) where T : class;
+
+        Task<int> Delete<T>(Expression<Func<T, bool>> condition) where T : class, new();
+
+        Task<int> Delete<T>(params object[] id) where T : class;
+
+        Task<int> Delete<T>(string propertyName, object propertyValue) where T : class;
+
+        #endregion
+
+        #region Update
+
+        Task<int> Update<T>(T entity) where T : class;
+
+        Task<int> Update<T>(IEnumerable<T> entities) where T : class;
+
+        Task<int> Update<T>(Expression<Func<T, bool>> condition) where T : class, new();
+
+        #endregion
+
+        #region Find
+
+        Task<T> FindEntity<T>(object keyValue) where T : class;
+
+        Task<T> FindEntity<T>(Expression<Func<T, bool>> condition) where T : class, new();
+
+        Task<T> FindEntity<T>(string sql, params DbParameter[] dbParameter);
+
+        Task<List<T>> FindList<T>() where T : class, new();
+
+        Task<List<T>> FindList<T>(Expression<Func<T, bool>> condition) where T : class, new();
+
+        Task<List<T>> FindList<T>(string sql, params DbParameter[] dbParameter) where T : class;
+
+        Task<(int total, List<T> list)> FindList<T>(string sort, bool isAsc, int pageSize, int pageIndex, Expression<Func<T, bool>> condition) where T : class, new();
+
+        Task<(int total, List<T>)> FindList<T>(string sql, string sort, bool isAsc, int pageSize, int pageIndex, params DbParameter[] dbParameter);
+
+        Task<DataTable> FindTable(string sql, params DbParameter[] dbParameter);
+
+        Task<(int total, DataTable)> FindTable(string sql, string sort, bool isAsc, int pageSize, int pageIndex, params DbParameter[] dbParameter);
+
+        #endregion
+    }
+
     public abstract class AbstractDatabase : IDatabase
     {
         #region 属性
@@ -63,7 +156,7 @@ namespace YiSha.Data.EF.Database
             }
             finally
             {
-                await Close();
+                await DbContext.DisposeAsync();
             }
         }
 
@@ -73,14 +166,6 @@ namespace YiSha.Data.EF.Database
         public virtual async Task RollbackTrans()
         {
             await DbContextTransaction.RollbackAsync();
-            await Close();
-        }
-
-        /// <summary>
-        /// 关闭连接 内存回收
-        /// </summary>
-        public virtual async Task Close()
-        {
             await DbContext.DisposeAsync();
         }
 
@@ -146,7 +231,7 @@ namespace YiSha.Data.EF.Database
         public virtual async Task<int> Delete<T>(Expression<Func<T, bool>> condition) where T : class, new()
         {
             var list = await DbContext.Set<T>().Where(condition).ToListAsync();
-            return list.Any() ? await Delete(list.AsEnumerable()) : 0;
+            return list.Any() ? await Delete(list) : 0;
         }
 
         public virtual async Task<int> Delete<T>(object[] keyValue) where T : class
@@ -227,8 +312,7 @@ namespace YiSha.Data.EF.Database
 
         public virtual async Task<T> FindEntity<T>(string sql, params DbParameter[] dbParameter)
         {
-            await using var dbConnection = DbContext.Database.GetDbConnection();
-            using var reader = await new DbHelper(DbContext, dbConnection).ExecuteReadeAsync(CommandType.Text, sql, dbParameter);
+            using var reader = await new DbHelper(DbContext).ExecuteReadeAsync(CommandType.Text, sql, dbParameter);
             return reader.ToInstance<T>();
         }
 
@@ -244,8 +328,7 @@ namespace YiSha.Data.EF.Database
 
         public virtual async Task<List<T>> FindList<T>(string sql, params DbParameter[] dbParameter) where T : class
         {
-            await using var dbConnection = DbContext.Database.GetDbConnection();
-            using var reader = await new DbHelper(DbContext, dbConnection).ExecuteReadeAsync(CommandType.Text, sql, dbParameter);
+            using var reader = await new DbHelper(DbContext).ExecuteReadeAsync(CommandType.Text, sql, dbParameter);
             return reader.ToList<T>();
         }
 
@@ -265,8 +348,7 @@ namespace YiSha.Data.EF.Database
 
         public virtual async Task<(int total, List<T>)> FindList<T>(string sql, string sort, bool isAsc, int pageSize, int pageIndex, params DbParameter[] dbParameter)
         {
-            await using var dbConnection = DbContext.Database.GetDbConnection();
-            var dbHelper = new DbHelper(DbContext, dbConnection);
+            var dbHelper = new DbHelper(DbContext);
             int total = (await dbHelper.ExecuteScalarAsync(CommandType.Text, DbSqlHelper.GetCountSql(sql), dbParameter)).ParseToInt();
             if (total > 0)
             {
@@ -279,15 +361,13 @@ namespace YiSha.Data.EF.Database
 
         public virtual async Task<DataTable> FindTable(string sql, params DbParameter[] dbParameter)
         {
-            await using var dbConnection = DbContext.Database.GetDbConnection();
-            using var reader = await new DbHelper(DbContext, dbConnection).ExecuteReadeAsync(CommandType.Text, sql, dbParameter);
+            using var reader = await new DbHelper(DbContext).ExecuteReadeAsync(CommandType.Text, sql, dbParameter);
             return reader.ToDataTable();
         }
 
         public virtual async Task<(int total, DataTable)> FindTable(string sql, string sort, bool isAsc, int pageSize, int pageIndex, params DbParameter[] dbParameter)
         {
-            await using var dbConnection = DbContext.Database.GetDbConnection();
-            var dbHelper = new DbHelper(DbContext, dbConnection);
+            var dbHelper = new DbHelper(DbContext);
             int total = (await dbHelper.ExecuteScalarAsync(CommandType.Text, DbSqlHelper.GetCountSql(sql), dbParameter)).ParseToInt();
             if (total > 0)
             {

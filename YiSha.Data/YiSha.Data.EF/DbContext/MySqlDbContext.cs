@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using System.ComponentModel.DataAnnotations;
@@ -14,6 +15,7 @@ namespace YiSha.Data.EF.DbContext
     {
         private static readonly ConcurrentDictionary<string, string[]> _keyCache = new();
         private static readonly ILoggerFactory _loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
+        private static readonly IInterceptor _interceptor = new DbCommandCustomInterceptor();
 
         private string ConnectionString { get; }
 
@@ -28,18 +30,19 @@ namespace YiSha.Data.EF.DbContext
         {
             if (!builder.IsConfigured)
             {
-                builder.UseLoggerFactory(_loggerFactory)
-                       .AddInterceptors(new DbCommandCustomInterceptor())
+                builder.AddInterceptors(_interceptor)
+                       .UseLoggerFactory(_loggerFactory)
+                       .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking)
                        .UseMySql(ConnectionString, ServerVersion.AutoDetect(ConnectionString), o => o.CommandTimeout(GlobalContext.SystemConfig.DbCommandTimeout));
             }
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            var entityAssembly = Assembly.Load(new AssemblyName("YiSha.Entity"));
-            var types = entityAssembly.GetTypes()
-                                      .Where(p => p.Namespace?.Length > 0)
-                                      .Where(p => p.GetCustomAttribute<TableAttribute>()?.Name.Length > 0);
+            var types = Assembly.Load(new AssemblyName("YiSha.Entity"))
+                                .GetTypes()
+                                .Where(p => p.Namespace?.Length > 0)
+                                .Where(p => p.GetCustomAttribute<TableAttribute>()?.Name.Length > 0);
 
             foreach (var type in types)
             {
